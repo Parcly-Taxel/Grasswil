@@ -26,7 +26,7 @@ noncomputable def orthoplex [NeZero n] : ConvexPolytope n where
     refine self_eq_extremePoints_convexHull_of_subset_sphere 0 1 fun p mp ↦ ?_
     rw [mem_coe, mem_image] at mp
     obtain ⟨p, -, rfl⟩ := mp
-    simp [orthoplexVert, EuclideanSpace.dist_eq]
+    simp [orthoplexVert, abs_ite]
 
 variable (i s) in
 lemma mem_orthoplex (nzn : NeZero n := i.neZero) : orthoplexVert i s ∈ (orthoplex n).toSet := by

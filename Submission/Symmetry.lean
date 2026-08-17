@@ -17,13 +17,11 @@ def toLI : E n ≃ₗᵢ[ℝ] E n where
     have ho : R.1ᵀ * R.1 = 1 := R.2.1
     simp [dotProduct_mulVec, vecMul_mulVec, ho]
 
-lemma toLI_apply : toLI R p = R.1 *ᵥ p := rfl
-
 variable (R v) in
 /-- Construct an `Isom` from an orthogonal matrix and a translation vector. -/
 def toIsom : Isom n := AffineIsometryEquiv.mk' (toLI R · + v) (toLI R) 0 (by simp)
 
-lemma toIsom_apply : toIsom R v p = R.1 *ᵥ p + v := rfl
+lemma toIsom_apply : toIsom R v p = .toLp 2 (R.1 *ᵥ p + v) := rfl
 
 lemma isom_image_convexHull (R : Isom n) (s : Set (E n)) :
     R '' convexHull ℝ s = convexHull ℝ (R '' s) :=

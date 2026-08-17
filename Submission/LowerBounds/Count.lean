@@ -91,8 +91,7 @@ theorem platonicCount_four_ge : 4 ≤ platonicCount 4 := by
       simp
     · rw [hypercube, card_image_of_injective _ injective_hypercubeVert]
       simp
-    · rw [cell24, card_image_of_injective _ injective_cell24Vert]
-      simp
+    · exact card_cell24_vertices
   simp_rw [e, v]
   apply StrictMono.injective
   simp only [strictMono_vecCons, Matrix.cons_val_zero, Nat.reduceAdd, strictMono_vecEmpty, and_true]
