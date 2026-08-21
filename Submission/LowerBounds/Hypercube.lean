@@ -53,7 +53,7 @@ lemma sum_cubeWeight_smul_apply {v : Fin n → ℝ} {j : Fin n} :
     have pcon : ∏ i ∈ {j}ᶜ, f i (s i) = ∏ i ∈ {j}ᶜ, g i (s i) :=
       prod_congr rfl fun i hi ↦ by simp_all [g]
     rw [pcon]
-    simp only [g, if_pos rfl]
+    simp only [g, reduceIte]
     ring
   rw [sum_congr rfl fun s _ ↦ rearr s, ← Fintype.prod_sum, Fintype.prod_eq_single j]
   · simp only [f, g, Fintype.sum_bool, Bool.false_eq_true, reduceIte]

@@ -94,8 +94,97 @@ lemma card_cell24Dual_vertices : #cell24Dual.vertices = 24 := by
   rw [cell24Dual, card_image_of_injective _ injective_cell24DualVert]
   decide
 
-lemma cell24_toSet_eq : cell24.toSet = {v | ∀ i j, i < j → |v i| + |v j| ≤ 1} := by
-  sorry
+lemma cell24_toSet_subset : cell24.toSet ⊆ {v | ∀ i j, i < j → |v i| + |v j| ≤ 1} := by
+  refine convexHull_min (fun v mv ↦ ?_) fun x hx y hy a b la lb s i j l ↦ ?_
+  · rw [Set.mem_ofPred]
+    rw [mem_coe, cell24, mem_image] at mv
+    obtain ⟨t, -, rfl⟩ := mv
+    cases t with
+    | inl p => simp_rw [cell24Vert, Sum.elim_inl, PiLp.single_apply]; grind
+    | inr s => simp_rw [cell24Vert, Sum.elim_inr, abs_ite]; norm_num
+  · simp_rw [PiLp.add_apply, PiLp.smul_apply, smul_eq_mul]
+    calc
+      _ ≤ _ := add_le_add (abs_add_le ..) (abs_add_le ..)
+      _ = a * (|x i| + |x j|) + b * (|y i| + |y j|) := by
+        simp_rw [abs_mul, abs_of_nonneg la, abs_of_nonneg lb]; ring
+      _ ≤ a * 1 + b * 1 := by specialize hx _ _ l; specialize hy _ _ l; gcongr
+      _ = _ := by simpa
+
+lemma tesseract_subset_cell24_toSet : {v | ∀ i, |v i| ≤ 2⁻¹} ⊆ cell24.toSet := fun v mv ↦ by
+  let w (s : Fin 4 → Bool) := ∏ i, if s i then 2⁻¹ - v i else 2⁻¹ + v i
+  apply mem_convexHull_of_exists_fintype (Sum.elim (fun _ ↦ 0) w) cell24Vert
+  · rintro (p | s)
+    · simp
+    · exact prod_nonneg fun i _ ↦ by split_ifs <;> linarith [abs_le.mp (mv i)]
+  · simp_rw [Fintype.sum_sum_type, Sum.elim_inl, sum_const_zero, zero_add, Sum.elim_inr]
+    rw [← Fintype.prod_sum fun _ b ↦ if b = true then _ else _]
+    refine Fintype.prod_eq_one _ fun i ↦ ?_
+    simp only [Fintype.sum_bool, Bool.false_eq_true, reduceIte]
+    ring
+  · exact fun _ ↦ mem_image_of_mem _ (mem_univ _)
+  · simp_rw [Fintype.sum_sum_type, Sum.elim_inl, zero_smul, sum_const_zero, zero_add]
+    ext j
+    simp_rw [WithLp.ofLp_sum, WithLp.ofLp_smul, Finset.sum_apply, Pi.smul_apply, smul_eq_mul,
+      cell24Vert, Sum.elim_inr]
+    let f (i) (b : Bool) := if b then 2⁻¹ - v i else 2⁻¹ + v i
+    let g (i) (b : Bool) := if i = j then f i b * (if b then -2⁻¹ else 2⁻¹) else f i b
+    have rearr (s) : w s * (if s j then -2⁻¹ else 2⁻¹) = ∏ i, g i (s i) := by
+      simp_rw [Fintype.prod_eq_mul_prod_compl j, w, Fintype.prod_eq_mul_prod_compl j]
+      have pcon : ∏ i ∈ {j}ᶜ, f i (s i) = ∏ i ∈ {j}ᶜ, g i (s i) :=
+        prod_congr rfl fun i hi ↦ by simp_all [g]
+      rw [pcon]
+      simp only [g, reduceIte]
+      ring
+    rw [sum_congr rfl fun s _ ↦ rearr s, ← Fintype.prod_sum, Fintype.prod_eq_single j]
+    · simp only [f, g, Fintype.sum_bool, Bool.false_eq_true, reduceIte]
+      ring
+    · intro i hij
+      simp only [f, g, hij, Fintype.sum_bool, Bool.false_eq_true, reduceIte]
+      ring
+
+lemma cell24_toSet_superset : {v | ∀ i j, i < j → |v i| + |v j| ≤ 1} ⊆ cell24.toSet := fun v mv ↦ by
+  by_cases! tess : ∀ i, |v i| ≤ 2⁻¹
+  · exact tesseract_subset_cell24_toSet tess
+  obtain ⟨i, hi⟩ := tess
+  let s := decide (v i < 0)
+  have sma : v i = (if s then -1 else 1) * |v i| := by
+    obtain h | h := abs_cases (v i) <;> simp [h, s]
+  let c : ℝ := 2 * (1 - |v i|)
+  have nnc : 0 ≤ c := by
+    obtain rfl | li : i = 3 ∨ i < 3 := by lia
+    · specialize mv 0 3 (by lia)
+      linarith [abs_nonneg (v 0)]
+    · specialize mv i (i + 1) (by lia)
+      linarith [abs_nonneg (v (i + 1))]
+  obtain c0 | cpos := nnc.eq_or_lt'
+  · suffices v = cell24Vert (.inl (i, s)) from
+      this ▸ subset_convexHull ℝ _ (mem_image_of_mem _ (mem_univ _))
+    ext j
+    rw [mul_eq_zero_iff_left two_ne_zero, sub_eq_zero] at c0
+    simp_rw [cell24Vert, Sum.elim_inl, PiLp.single_apply]
+    obtain l | rfl | l := lt_trichotomy j i
+    · simpa [← c0, l.ne] using mv _ _ l
+    · rw [sma, ← c0]; simp
+    · simpa [← c0, l.ne'] using mv _ _ l
+  let p := c⁻¹ • (v - (1 - c) • cell24Vert (.inl (i, s)))
+  have cc : (1 - c) • cell24Vert (.inl (i, s)) + c • p = v := by
+    simp [p, smul_smul, mul_inv_cancel₀ cpos.ne']
+  rw [← cc]
+  refine convex_convexHull ℝ _ (subset_convexHull ℝ _ <| mem_image_of_mem _ <| mem_univ _)
+    (tesseract_subset_cell24_toSet fun j ↦ ?_) (by linarith) cpos.le (by ring)
+  simp_rw [p, cell24Vert, Sum.elim_inl, PiLp.smul_apply, PiLp.sub_apply, PiLp.smul_apply,
+    smul_eq_mul, abs_mul, abs_inv, abs_of_pos cpos]
+  obtain l | rfl | l := lt_trichotomy i j
+  · rw [PiLp.single_eq_of_ne' _ l.ne, mul_zero, sub_zero, inv_mul_le_iff₀' cpos]
+    linarith [mv _ _ l]
+  · rw [PiLp.single_eq_same, sma, mul_comm (1 - c), ← mul_sub, abs_mul, abs_ite, abs_neg, ite_self,
+      abs_one, one_mul, show |v.ofLp i| - (1 - c) = 2⁻¹ * c by ring, abs_mul, abs_of_pos cpos]
+    simp [mul_left_comm, inv_mul_cancel₀ cpos.ne']
+  · rw [PiLp.single_eq_of_ne _ l.ne, mul_zero, sub_zero, inv_mul_le_iff₀' cpos]
+    linarith [mv _ _ l]
+
+lemma cell24_toSet_eq : cell24.toSet = {v | ∀ i j, i < j → |v i| + |v j| ≤ 1} :=
+  subset_antisymm cell24_toSet_subset cell24_toSet_superset
 
 lemma cell24Dual_polar_eq :
     ⋂ v ∈ cell24Dual.toSet, {w | inner ℝ v w ≤ 1} = {v | ∀ i j, i < j → |v i| + |v j| ≤ 1} := by
@@ -181,13 +270,6 @@ lemma similar_cell24Dual_cell24 : cell24Dual.Similar cell24 := by
   · rw [Set.card_image_of_injective _ (smul_right_injective _ (by positivity)),
       Set.card_image_of_injective _ fun _ _ ↦ by simp]
     simp [card_cell24_vertices, card_cell24Dual_vertices]
-
-theorem cell24_facet_ridge_characterisation (F : cell24.Flag) :
-    ∃ I J, dist (cell24DualVert I) (cell24DualVert J) ^ 2 = 2 ∧
-    F.face 3 = convexHull ℝ (cell24.vertices.filter (inner ℝ (cell24DualVert I) · = 1)) ∧
-    F.face 2 = convexHull ℝ (cell24.vertices.filter
-      fun v ↦ inner ℝ (cell24DualVert I) v = 1 ∧ inner ℝ (cell24DualVert J) v = 1) := by
-  sorry
 
 theorem cell24_isRegular : cell24.IsRegular := by
   sorry
