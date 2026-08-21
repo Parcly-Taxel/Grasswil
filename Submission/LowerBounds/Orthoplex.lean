@@ -171,17 +171,14 @@ theorem orthoplex_flag_characterisation [NeZero n] (F : (orthoplex n).Flag) :
 lemma coordPerm_orthoplexVert {σ : Equiv.Perm (Fin n)} :
     (toIsom (coordPerm σ) 0) (orthoplexVert i s) = orthoplexVert (σ⁻¹ i) s := by
   ext c
-  simp_rw [toIsom_apply, WithLp.ofLp_zero, add_zero, coordPerm, Matrix.permMatrix_mulVec,
-    orthoplexVert, PiLp.ofLp_single, Function.comp_apply, Equiv.Perm.coe_inv,
-    Pi.single_apply, Equiv.eq_symm_apply]
+  simp [toIsom_apply, coordPerm, Matrix.permMatrix_mulVec, orthoplexVert, -PiLp.ofLp_single,
+    σ.eq_symm_apply]
 
 lemma coordFlip_orthoplexVert {m : Fin n → Bool} :
     (toIsom (coordFlip m) 0) (orthoplexVert i s) = orthoplexVert i (m i ^^ s) := by
   ext c
-  simp_rw [toIsom_apply, WithLp.ofLp_zero, add_zero, coordFlip, orthoplexVert, PiLp.ofLp_single,
-    Matrix.mulVec_single, Matrix.col_diagonal, Pi.smul_apply, MulOpposite.smul_eq_mul_unop,
-    MulOpposite.unop_op, Pi.single_apply]
-  by_cases hc : c = i <;> simp only [hc, reduceIte, zero_mul]
+  simp_rw [toIsom_apply, WithLp.ofLp_zero, add_zero, coordFlip, Matrix.mulVec_diagonal,
+    orthoplexVert, PiLp.single_apply]
   split_ifs <;> simp_all
 
 lemma isSymmetry_orthoplex_coordPerm [NeZero n] {σ : Equiv.Perm (Fin n)} :
