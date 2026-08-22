@@ -23,6 +23,9 @@ def toIsom : Isom n := AffineIsometryEquiv.mk' (toLI R · + v) (toLI R) 0 (by si
 
 lemma toIsom_apply : toIsom R v p = .toLp 2 (R.1 *ᵥ p + v) := rfl
 
+lemma toIsom_add : toIsom R 0 (v + p) = toIsom R 0 v + toIsom R 0 p := by
+  simp [toIsom_apply, mulVec_add]
+
 lemma isom_image_convexHull (R : Isom n) (s : Set (E n)) :
     R '' convexHull ℝ s = convexHull ℝ (R '' s) :=
   R.toAffineMap.image_convexHull s

@@ -245,6 +245,16 @@ lemma one_dim_face_is_edge (fs : P.IsFace s) (ds : faceDim s = 1) :
   rw [toSet, ← P.vertices_eq_extremePoints]
   exact sg mb
 
+/-- An extreme point lying in the segment spanned by two vertices is one of them. -/
+lemma mem_pair_of_mem_convexHull_pair {v a b : E n} (mv : v ∈ P.vertices) (ma : a ∈ P.vertices)
+    (mb : b ∈ P.vertices) (hv : v ∈ convexHull ℝ {a, b}) : v = a ∨ v = b := by
+  rw [← mem_coe, P.vertices_eq_extremePoints] at mv
+  have sg : {a, b} ⊆ P.vertices := by simp [Finset.insert_subset_iff, ma, mb]
+  replace mv := inter_extremePoints_subset_extremePoints_of_subset (𝕜 := ℝ)
+    (convexHull_mono (𝕜 := ℝ) sg) ⟨@coe_pair _ _ a b ▸ hv, mv⟩
+  rw [← self_eq_exch_of_subset sg] at mv
+  simpa using mv
+
 lemma dim_ne_zero_iff_card_vertices : P.dim ≠ 0 ↔ 1 < #P.vertices := by
   rw [← not_iff_not, not_ne_iff, not_lt, card_le_one_iff_subsingleton,
     ← vectorSpan_eq_bot_iff_subsingleton ℝ, ← vectorSpan_convexHull_eq_vectorSpan, dim,
