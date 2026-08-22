@@ -301,7 +301,7 @@ lemma halfmard_cell24Vert_inl {i : Fin 4} {s : Bool} :
 lemma halfmard_cell24Vert_inr_even {s : Fin 4 → Bool} (hs : (s 0 ^^ s 1 ^^ s 2 ^^ s 3) = false) :
     (toIsom halfmard 0) (cell24Vert (.inr s)) =
     cell24Vert (.inl ((bif s 0 ^^ s 1 then 2 else 0) + bif s 0 ^^ s 2 then 1 else 0,
-      (!s 0 || s 1) && (s 2 || s 3))) := by
+      !s 0 && s 1 || s 2 && s 3)) := by
   ext j
   simp_rw [toIsom_apply, WithLp.ofLp_zero, add_zero, cell24Vert, Sum.elim_inl, Sum.elim_inr,
     mulVec_apply_eq_sum, PiLp.single_apply, halfmard, of_apply, Fin.sum_univ_four]
@@ -309,8 +309,8 @@ lemma halfmard_cell24Vert_inr_even {s : Fin 4 → Bool} (hs : (s 0 ^^ s 1 ^^ s 2
 
 lemma halfmard_cell24Vert_inr_odd {s : Fin 4 → Bool} (hs : (s 0 ^^ s 1 ^^ s 2 ^^ s 3) = true) :
     (toIsom halfmard 0) (cell24Vert (.inr s)) =
-    cell24Vert (.inr ![(s 0 || s 1) && (s 2 || s 3), (!s 0 || !s 1) && (s 2 || s 3),
-      (!s 0 || s 1) && (!s 2 || s 3), (!s 0 || s 1) && (s 2 || !s 3)]) := by
+    cell24Vert (.inr ![s 0 && s 1 || s 2 && s 3, !s 0 && !s 1 || s 2 && s 3,
+      !s 0 && s 1 || !s 2 && s 3, !s 0 && s 1 || s 2 && !s 3]) := by
   ext j
   simp_rw [toIsom_apply, WithLp.ofLp_zero, add_zero, cell24Vert, Sum.elim_inr, mulVec_apply_eq_sum,
     halfmard, of_apply, Fin.sum_univ_four]
