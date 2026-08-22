@@ -249,7 +249,7 @@ lemma isSymmetry_cell24_coordPerm {σ : Equiv.Perm (Fin 4)} :
       intro v hv
       simp only [R, cell24, mem_coe, mem_image, Set.mem_preimage] at *
       obtain ⟨t, -, rfl⟩ := hv
-      exact ⟨t.map (fun ⟨i, s⟩ ↦ (σ⁻¹ i, s)) (· ∘ σ), mem_univ _, coordPerm_cell24Vert.symm⟩
+      exact ⟨_, mem_univ _, coordPerm_cell24Vert.symm⟩
     · rw [Set.card_image_of_injective _ R.injective]
   have ch := isom_image_convexHull R cell24.vertices
   rwa [im] at ch
@@ -263,8 +263,7 @@ lemma isSymmetry_cell24_coordFlip {m : Fin 4 → Bool} :
       intro v hv
       simp only [R, cell24, mem_coe, mem_image, Set.mem_preimage] at *
       obtain ⟨t, -, rfl⟩ := hv
-      exact ⟨t.map (fun ⟨i, s⟩ ↦ (i, m i ^^ s)) fun s i ↦ m i ^^ s i, mem_univ _,
-        coordFlip_cell24Vert.symm⟩
+      exact ⟨_, mem_univ _, coordFlip_cell24Vert.symm⟩
     · rw [Set.card_image_of_injective _ R.injective]
   have ch := isom_image_convexHull R cell24.vertices
   rwa [im] at ch
@@ -279,94 +278,61 @@ lemma coordFlip_twoE4 {a b : Fin 4} {s t : Bool} {m : Fin 4 → Bool} :
     toIsom (coordFlip m) 0 (twoE4 a b s t) = twoE4 a b (m a ^^ s) (m b ^^ t) := by
   rw [toIsom_add]
   apply congrArg₂ (· + ·) <;> ext i <;> simp_rw [toIsom_apply, WithLp.ofLp_zero, add_zero,
-    coordFlip, mulVec_diagonal, PiLp.single_apply] <;> split_ifs <;> simp_all
+    coordFlip, mulVec_diagonal, PiLp.single_apply] <;> grind
 
-/-- **Half** a Hada**mard** matrix, a reflection sending `(½, ½, ½, ½)` to `(1, 0, 0, 0)`. -/
+/-- **Half** a Hada**mard** matrix, a rotation sending `(½, ½, ½, ½)` to `(1, 0, 0, 0)`. -/
 noncomputable def halfmard : orthogonalGroup (Fin 4) ℝ where
-  val := (2⁻¹ : ℝ) • !![1,1,1,1; 1,1,-1,-1; 1,-1,1,-1; 1,-1,-1,1]
+  val := of fun i j ↦ if j = 0 ↔ i = j then 2⁻¹ else -2⁻¹
   property := by
-    rw [mem_orthogonalGroup_iff, transpose_smul, smul_mul_smul_comm]
+    rw [mem_orthogonalGroup_iff]
     ext i j
-    simp_rw [Matrix.smul_apply, mul_apply, Fin.sum_univ_four, transpose_apply]
-    fin_cases i <;> fin_cases j <;> simp [show 2⁻¹ * 2⁻¹ * (1 + 1 + 1 + 1 : ℝ) = 1 by norm_num]
+    simp_rw [mul_apply, Fin.sum_univ_four, transpose_apply, of_apply, one_apply]
+    grind
 
-lemma halfmard_mul_self : halfmard.1 * halfmard.1 = 1 := by
-  ext i j
-  rw [halfmard, smul_mul_smul_comm, Matrix.smul_apply, mul_apply, Fin.sum_univ_four]
-  fin_cases i <;> fin_cases j <;> simp [show 2⁻¹ * 2⁻¹ * (1 + 1 + 1 + 1 : ℝ) = 1 by norm_num]
+lemma halfmard_cell24Vert_inl {i : Fin 4} {s : Bool} :
+    (toIsom halfmard 0) (cell24Vert (.inl (i, s))) =
+    cell24Vert (.inr ![s, s ^^ (i = 0 ∨ i = 1), s ^^ (i = 0 ∨ i = 2), s ^^ (i = 0 ∨ i = 3)]) := by
+  ext j
+  simp_rw [toIsom_apply, WithLp.ofLp_zero, add_zero, cell24Vert, Sum.elim_inl, Sum.elim_inr,
+    mulVec_apply_eq_sum, PiLp.single_apply, halfmard, of_apply, mul_ite, mul_zero,
+    Fintype.sum_ite_eq', ← mul_ite]
+  fin_cases j <;> simp only [Fin.reduceFinMk, Matrix.cons_val] <;> grind
 
-lemma halfmard_involutive (v : E 4) : toIsom halfmard 0 (toIsom halfmard 0 v) = v := by
-  simp_rw [toIsom_apply, WithLp.ofLp_zero, add_zero, mulVec_mulVec, halfmard_mul_self, one_mulVec]
+lemma halfmard_cell24Vert_inr_even {s : Fin 4 → Bool} (hs : (s 0 ^^ s 1 ^^ s 2 ^^ s 3) = false) :
+    (toIsom halfmard 0) (cell24Vert (.inr s)) =
+    cell24Vert (.inl ((bif s 0 ^^ s 1 then 2 else 0) + bif s 0 ^^ s 2 then 1 else 0,
+      (!s 0 || s 1) && (s 2 || s 3))) := by
+  ext j
+  simp_rw [toIsom_apply, WithLp.ofLp_zero, add_zero, cell24Vert, Sum.elim_inl, Sum.elim_inr,
+    mulVec_apply_eq_sum, PiLp.single_apply, halfmard, of_apply, Fin.sum_univ_four]
+  grind
 
-lemma halfmard_apply_zero (v : E 4) : toIsom halfmard 0 v 0 = 2⁻¹ * (v 0 + v 1 + v 2 + v 3) := by
-  simp [toIsom_apply, halfmard, dotProduct, Fin.sum_univ_four]
-  ring
+lemma halfmard_cell24Vert_inr_odd {s : Fin 4 → Bool} (hs : (s 0 ^^ s 1 ^^ s 2 ^^ s 3) = true) :
+    (toIsom halfmard 0) (cell24Vert (.inr s)) =
+    cell24Vert (.inr ![(s 0 || s 1) && (s 2 || s 3), (!s 0 || !s 1) && (s 2 || s 3),
+      (!s 0 || s 1) && (!s 2 || s 3), (!s 0 || s 1) && (s 2 || !s 3)]) := by
+  ext j
+  simp_rw [toIsom_apply, WithLp.ofLp_zero, add_zero, cell24Vert, Sum.elim_inr, mulVec_apply_eq_sum,
+    halfmard, of_apply, Fin.sum_univ_four]
+  fin_cases j <;> simp only [Fin.reduceFinMk, Matrix.cons_val] <;> grind
 
-lemma halfmard_apply_one (v : E 4) : toIsom halfmard 0 v 1 = 2⁻¹ * (v 0 + v 1 - v 2 - v 3) := by
-  simp [toIsom_apply, halfmard, dotProduct, Fin.sum_univ_four]
-  ring
-
-lemma halfmard_apply_two (v : E 4) : toIsom halfmard 0 v 2 = 2⁻¹ * (v 0 - v 1 + v 2 - v 3) := by
-  simp [toIsom_apply, halfmard, dotProduct, Fin.sum_univ_four]
-  ring
-
-lemma halfmard_apply_three (v : E 4) : toIsom halfmard 0 v 3 = 2⁻¹ * (v 0 - v 1 - v 2 + v 3) := by
-  simp [toIsom_apply, halfmard, dotProduct, Fin.sum_univ_four]
-  ring
-
-lemma abs_add_abs_le_one {x y p q : ℝ} (hx : x = 2⁻¹ * (p + q)) (hy : y = 2⁻¹ * (p - q))
-    (hp : |p| ≤ 1) (hq : |q| ≤ 1) : |x| + |y| ≤ 1 := by
-  obtain ⟨hp₁, hp₂⟩ := abs_le.mp hp
-  obtain ⟨hq₁, hq₂⟩ := abs_le.mp hq
-  rcases abs_cases x with ⟨ex, -⟩ | ⟨ex, -⟩ <;> rcases abs_cases y with ⟨ey, -⟩ | ⟨ey, -⟩ <;>
-    rw [ex, ey, hx, hy] <;> linarith
-
-lemma mapsTo_halfmard {v : E 4} (hv : v ∈ cell24.toSet) : toIsom halfmard 0 v ∈ cell24.toSet := by
-  rw [cell24_toSet_eq] at hv ⊢
-  have hb (a b) (hab : a ≠ b) : |v a| + |v b| ≤ 1 := by
-    rcases hab.lt_or_gt with h | h
-    · exact hv a b h
-    · rw [add_comm]
-      exact hv b a h
-  have hadd (a b) (hab : a ≠ b) : |v a + v b| ≤ 1 := (abs_add_le ..).trans (hb a b hab)
-  have hsub (a b) (hab : a ≠ b) : |v a - v b| ≤ 1 := by
-    rw [sub_eq_add_neg]
-    refine (abs_add_le ..).trans ?_
-    rw [abs_neg]
-    exact hb a b hab
-  intro i j hij
-  obtain ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ :
-      i = 0 ∧ j = 1 ∨ i = 0 ∧ j = 2 ∨ i = 0 ∧ j = 3 ∨ i = 1 ∧ j = 2 ∨ i = 1 ∧ j = 3 ∨
-        i = 2 ∧ j = 3 := by lia
-  · exact abs_add_abs_le_one ((halfmard_apply_zero v).trans (by ring))
-      ((halfmard_apply_one v).trans (by ring)) (hadd 0 1 (by lia)) (hadd 2 3 (by lia))
-  · exact abs_add_abs_le_one ((halfmard_apply_zero v).trans (by ring))
-      ((halfmard_apply_two v).trans (by ring)) (hadd 0 2 (by lia)) (hadd 1 3 (by lia))
-  · exact abs_add_abs_le_one ((halfmard_apply_zero v).trans (by ring))
-      ((halfmard_apply_three v).trans (by ring)) (hadd 0 3 (by lia)) (hadd 1 2 (by lia))
-  · exact abs_add_abs_le_one ((halfmard_apply_one v).trans (by ring))
-      ((halfmard_apply_two v).trans (by ring)) (hsub 0 3 (by lia)) (hsub 1 2 (by lia))
-  · exact abs_add_abs_le_one ((halfmard_apply_one v).trans (by ring))
-      ((halfmard_apply_three v).trans (by ring)) (hsub 0 2 (by lia)) (hsub 1 3 (by lia))
-  · exact abs_add_abs_le_one ((halfmard_apply_two v).trans (by ring))
-      ((halfmard_apply_three v).trans (by ring)) (hsub 0 1 (by lia)) (hsub 2 3 (by lia))
-
-lemma isSymmetry_cell24_halfmard : cell24.isSymmetry (toIsom halfmard 0) :=
-  subset_antisymm (Set.image_subset_iff.mpr fun _ hv ↦ mapsTo_halfmard hv)
-    fun v hv ↦ ⟨_, mapsTo_halfmard hv, halfmard_involutive v⟩
-
-lemma halfmard_half : toIsom halfmard 0 (cell24Vert (.inr fun _ ↦ false)) =
-    cell24Vert (.inl (0, false)) := by
-  ext i
-  obtain rfl | rfl | rfl | rfl : i = 0 ∨ i = 1 ∨ i = 2 ∨ i = 3 := by lia
-  · rw [halfmard_apply_zero]
-    norm_num [cell24Vert]
-  · rw [halfmard_apply_one]
-    simp [cell24Vert]
-  · rw [halfmard_apply_two]
-    simp [cell24Vert]
-  · rw [halfmard_apply_three]
-    simp [cell24Vert]
+lemma isSymmetry_cell24_halfmard : cell24.isSymmetry (toIsom halfmard 0) := by
+  set R := toIsom halfmard 0
+  have im : R '' (cell24.vertices : Set (E 4)) = cell24.vertices := by
+    apply Set.eq_of_subset_of_card_le
+    · rw [Set.image_subset_iff]
+      intro v hv
+      simp only [R, cell24, mem_coe, mem_image, Set.mem_preimage] at *
+      obtain ⟨t, -, rfl⟩ := hv
+      cases t with
+      | inl p => exact ⟨_, mem_univ _, halfmard_cell24Vert_inl.symm⟩
+      | inr s =>
+        cases hs : s 0 ^^ s 1 ^^ s 2 ^^ s 3 with
+        | false => exact ⟨_, mem_univ _, (halfmard_cell24Vert_inr_even hs).symm⟩
+        | true => exact ⟨_, mem_univ _, (halfmard_cell24Vert_inr_odd hs).symm⟩
+    · rw [Set.card_image_of_injective _ R.injective]
+  have ch := isom_image_convexHull R cell24.vertices
+  rwa [im] at ch
 
 /-! ### Flags of the 24-cell -/
 
@@ -484,9 +450,8 @@ lemma cell24_vertex_transitive {v : E 4} (mv : v ∈ cell24.vertices) :
   | inr m =>
     refine ⟨toIsom halfmard 0 * toIsom (coordFlip m) 0,
       isSymmetry_cell24_halfmard.mul isSymmetry_cell24_coordFlip, ?_⟩
-    simp_rw [AffineIsometryEquiv.coe_mul, Function.comp_apply, coordFlip_cell24Vert, Sum.map_inr,
-      Bool.xor_self]
-    exact halfmard_half
+    rw [AffineIsometryEquiv.coe_mul, Function.comp_apply, coordFlip_cell24Vert, Sum.map_inr]
+    simp [halfmard_cell24Vert_inr_even]
 
 lemma inner_twoE4 {a b : Fin 4} {s t : Bool} {v : E 4} :
     inner ℝ v (twoE4 a b s t) = (if s then -1 else 1) * v a + (if t then -1 else 1) * v b := by
@@ -530,20 +495,20 @@ lemma exists_C24FlagData_params (FD : C24FlagData) (v₀ : FD.v 0 = cell24Vert (
 lemma cell24_flag_transitive_aux (FD : C24FlagData) : ∃ φ, cell24.isSymmetry φ ∧
     φ (FD.v 0) = cell24Vert (.inl (0, false)) ∧ φ (FD.v 1) = cell24Vert (.inr fun _ ↦ false) ∧
     φ (FD.w 0) = twoE4 0 2 false false ∧ φ (FD.w 1) = twoE4 0 1 false false := by
-  obtain ⟨φ, sφ, hφ⟩ := cell24_vertex_transitive (FD.mv 0)
-  obtain ⟨m, b, hb, c, hc, m₀, nbc, e₁, e₂, e₃⟩ := exists_C24FlagData_params (FD.map sφ) hφ
-  simp_rw [C24FlagData.map] at e₁ e₂ e₃
-  obtain ⟨σ, hσ0, hσb, hσc⟩ : ∃ σ : Equiv.Perm (Fin 4), σ 0 = 0 ∧ σ b = 1 ∧ σ c = 2 := by
+  obtain ⟨φ, sφ, v₀⟩ := cell24_vertex_transitive (FD.mv 0)
+  obtain ⟨m, a, _, b, _, m₀, _, v₁, w₂, w₃⟩ := exists_C24FlagData_params (FD.map sφ) v₀
+  simp_rw [C24FlagData.map] at v₁ w₂ w₃
+  obtain ⟨σ, σ0, σb, σc⟩ : ∃ σ : Equiv.Perm (Fin 4), σ 0 = 0 ∧ σ a = 1 ∧ σ b = 2 := by
     clear! FD φ; decide +revert
   refine ⟨toIsom (coordPerm σ⁻¹) 0 * toIsom (coordFlip m) 0 * φ,
     (isSymmetry_cell24_coordPerm.mul isSymmetry_cell24_coordFlip).mul sφ, ?_, ?_, ?_, ?_⟩ <;>
   simp_rw [AffineIsometryEquiv.coe_mul, Function.comp_apply]
-  · simp_rw [hφ, coordFlip_cell24Vert, Sum.map_inl, m₀, Bool.xor_self, coordPerm_cell24Vert,
-      Sum.map_inl, inv_inv, hσ0]
-  · simp_rw [e₁, coordFlip_cell24Vert, Sum.map_inr, Bool.xor_self, coordPerm_cell24Vert,
+  · simp_rw [v₀, coordFlip_cell24Vert, Sum.map_inl, m₀, Bool.xor_self, coordPerm_cell24Vert,
+      Sum.map_inl, inv_inv, σ0]
+  · simp_rw [v₁, coordFlip_cell24Vert, Sum.map_inr, Bool.xor_self, coordPerm_cell24Vert,
       Sum.map_inr, Function.false_comp]
-  · simp_rw [e₂, coordFlip_twoE4, m₀, Bool.xor_self, coordPerm_twoE4, inv_inv, hσ0, hσc]
-  · simp_rw [e₃, coordFlip_twoE4, m₀, Bool.xor_self, coordPerm_twoE4, inv_inv, hσ0, hσb]
+  · simp_rw [w₂, coordFlip_twoE4, m₀, Bool.xor_self, coordPerm_twoE4, inv_inv, σ0, σc]
+  · simp_rw [w₃, coordFlip_twoE4, m₀, Bool.xor_self, coordPerm_twoE4, inv_inv, σ0, σb]
 
 lemma cell24_flag_transitive (FD GD : C24FlagData) :
     ∃ φ, cell24.isSymmetry φ ∧ ∀ i, φ (FD.v i) = GD.v i ∧ φ (FD.w i) = GD.w i := by
@@ -564,13 +529,11 @@ theorem cell24_isRegular : cell24.IsRegular := by
   obtain rfl | rfl | rfl | rfl : i = 0 ∨ i = 1 ∨ i = 2 ∨ i = 3 := by lia
   · rw [F₀, G₀, Set.image_singleton, (e 0).1]
   · rw [F₁, G₁, isom_image_convexHull, Set.image_pair, (e 0).1, (e 1).1]
-  · have dd₁ := pd.symm.faceDual_faceDual (F.isFace 2) (by simp [F.dim_eq 2])
-    have dd₂ := pd.symm.faceDual_faceDual (G.isFace 2) (by simp [G.dim_eq 2])
-    rw [← dd₁, ← dd₂, F₂, G₂]
+  · rw [← pd.symm.faceDual_faceDual (F.isFace 2) (by simp [F.dim_eq 2]), F₂,
+      ← pd.symm.faceDual_faceDual (G.isFace 2) (by simp [G.dim_eq 2]), G₂]
     apply pd.isom_apply (isSymmetry_cell24Dual_of_cell24 sφ) (cell24_sym_zero sφ)
     rw [isom_image_convexHull, Set.image_pair, (e 0).2, (e 1).2]
-  · have dd₁ := pd.symm.faceDual_faceDual (F.isFace 3) (by simp [F.dim_eq 3])
-    have dd₂ := pd.symm.faceDual_faceDual (G.isFace 3) (by simp [G.dim_eq 3])
-    rw [← dd₁, ← dd₂, F₃, G₃]
+  · rw [← pd.symm.faceDual_faceDual (F.isFace 3) (by simp [F.dim_eq 3]), F₃,
+      ← pd.symm.faceDual_faceDual (G.isFace 3) (by simp [G.dim_eq 3]), G₃]
     apply pd.isom_apply (isSymmetry_cell24Dual_of_cell24 sφ) (cell24_sym_zero sφ)
     rw [Set.image_singleton, (e 1).2]
