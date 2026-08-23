@@ -498,7 +498,7 @@ lemma cell24_flag_transitive_aux (FD : C24FlagData) : ∃ φ, cell24.isSymmetry 
   obtain ⟨φ, sφ, v₀⟩ := cell24_vertex_transitive (FD.mv 0)
   obtain ⟨m, a, _, b, _, m₀, _, v₁, w₂, w₃⟩ := exists_C24FlagData_params (FD.map sφ) v₀
   simp_rw [C24FlagData.map] at v₁ w₂ w₃
-  obtain ⟨σ, σ0, σb, σc⟩ : ∃ σ : Equiv.Perm (Fin 4), σ 0 = 0 ∧ σ a = 1 ∧ σ b = 2 := by
+  obtain ⟨σ, σ0, σa, σb⟩ : ∃ σ : Equiv.Perm (Fin 4), σ 0 = 0 ∧ σ a = 1 ∧ σ b = 2 := by
     clear! FD φ; decide +revert
   refine ⟨toIsom (coordPerm σ⁻¹) 0 * toIsom (coordFlip m) 0 * φ,
     (isSymmetry_cell24_coordPerm.mul isSymmetry_cell24_coordFlip).mul sφ, ?_, ?_, ?_, ?_⟩ <;>
@@ -507,8 +507,8 @@ lemma cell24_flag_transitive_aux (FD : C24FlagData) : ∃ φ, cell24.isSymmetry 
       Sum.map_inl, inv_inv, σ0]
   · simp_rw [v₁, coordFlip_cell24Vert, Sum.map_inr, Bool.xor_self, coordPerm_cell24Vert,
       Sum.map_inr, Function.false_comp]
-  · simp_rw [w₂, coordFlip_twoE4, m₀, Bool.xor_self, coordPerm_twoE4, inv_inv, σ0, σc]
-  · simp_rw [w₃, coordFlip_twoE4, m₀, Bool.xor_self, coordPerm_twoE4, inv_inv, σ0, σb]
+  · simp_rw [w₂, coordFlip_twoE4, m₀, Bool.xor_self, coordPerm_twoE4, inv_inv, σ0, σb]
+  · simp_rw [w₃, coordFlip_twoE4, m₀, Bool.xor_self, coordPerm_twoE4, inv_inv, σ0, σa]
 
 lemma cell24_flag_transitive (FD GD : C24FlagData) :
     ∃ φ, cell24.isSymmetry φ ∧ ∀ i, φ (FD.v i) = GD.v i ∧ φ (FD.w i) = GD.w i := by
